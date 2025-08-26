@@ -12,7 +12,10 @@ using namespace nasl;
 struct Tri { vec3 v0, v1, v2; vec3 color; };
 
 struct {
+    VkDeviceAddress vertex_buffer;
     mat4 matrix;
+    VkDeviceAddress face_buffer;
+    VkDeviceAddress position_buffer;
 } push_constants_batched;
 
 Camera camera;
@@ -101,6 +104,39 @@ int main(int argc, char** argv) {
     imr::Swapchain swapchain(device, window);
     imr::FpsCounter fps_counter;
 
+    std::unique_ptr<imr::Buffer> vertex_buffer;
+    std::unique_ptr<imr::Buffer> face_buffer;
+    std::unique_ptr<imr::Buffer> position_buffer;
+
+    std::vector<vec4> vertices = {
+        {0.0, 0.0, 0.0, 1.0}, // 0: A
+        {1.0, 0.0, 0.0, 1.0}, // 1: B
+        {1.0, 1.0, 0.0, 1.0}, // 2: C
+        {0.0, 1.0, 0.0, 1.0}, // 3: D
+        {0.0, 0.0, 1.0, 1.0}, // 4: E
+        {1.0, 0.0, 1.0, 1.0}, // 5: F
+        {1.0, 1.0, 1.0, 1.0}, // 6: G
+        {0.0, 1.0, 1.0, 1.0}  // 7: H
+    };
+
+    std::vector<uvec4> faces = {
+        {7, 3, 2, 6},   // top
+        {0, 1, 2, 3},   // north
+        {0, 3, 7, 4},   // west
+        {5, 6, 2, 1},   // east
+        {4, 7, 6, 5},   // south
+        {4, 5, 1, 0}    // bottom
+    };
+
+    face_buffer = std::make_unique<imr::Buffer>(device, sizeof(vec4) * faces.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    face_buffer->uploadDataSync(0, face_buffer->size, faces.data());
+
+    vertex_buffer = std::make_unique<imr::Buffer>(device, sizeof(vertices[0]) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    vertex_buffer->uploadDataSync(0, vertex_buffer->size, vertices.data());
+
+    push_constants_batched.vertex_buffer = vertex_buffer->device_address();
+    push_constants_batched.face_buffer = face_buffer->device_address();
+
     std::vector<vec3> positions;
     for (size_t i = 0; i < INSTANCES_COUNT; i++) {
         vec3 p;
@@ -109,6 +145,10 @@ int main(int argc, char** argv) {
         p.z = ((float)rand() / RAND_MAX) * 20 - 10;
         positions.push_back(p);
     }
+
+    position_buffer = std::make_unique<imr::Buffer>(device, sizeof(vec3) * positions.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    push_constants_batched.position_buffer = position_buffer->device_address();
+    position_buffer->uploadDataSync(0, position_buffer->size, positions.data());
 
     auto prev_frame = imr_get_time_nano();
     float delta = 0;
