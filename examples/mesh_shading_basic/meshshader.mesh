@@ -54,10 +54,10 @@ void main()
 	uint iid = gl_LocalInvocationID.x;
 	uint gid = gl_GlobalInvocationID.x;
 
-	vec4 starting_pos = vec4(push_constants.position_buffer.positions[gid], 1.0);
-	uvec4 index = push_constants.face_buffer.faces[gid];
+	vec4 starting_pos = vec4(push_constants.position_buffer.positions[gid/6], 1.0);
+	uvec4 index = push_constants.face_buffer.faces[iid % 6];
 
-	SetMeshOutputsEXT(0, 2);
+	SetMeshOutputsEXT(4, 2);
 	mat4 mvp = push_constants.matrix;
 	gl_MeshVerticesEXT[0].gl_Position = mvp * (push_constants.vertex_buffer.vertices[index[0]]);
 	gl_MeshVerticesEXT[1].gl_Position = mvp * (push_constants.vertex_buffer.vertices[index[1]]);

@@ -241,7 +241,7 @@ int main(int argc, char** argv) {
                     mat4 cube_matrix = m;
                     cube_matrix = cube_matrix * translate_mat4(pos);
 
-                    push_constants_batched.matrix = cube_matrix;
+                    push_constants_batched.matrix = m;
                     vkCmdPushConstants(cmdbuf, pipeline->layout(), VK_SHADER_STAGE_MESH_BIT_EXT, 0, sizeof(push_constants_batched), &push_constants_batched);
 
                     vk.cmdDrawMeshTasksEXT(cmdbuf, 1, 1, 1);
