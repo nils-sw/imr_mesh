@@ -16,6 +16,8 @@ struct {
     mat4 matrix;
     VkDeviceAddress face_buffer;
     VkDeviceAddress position_buffer;
+    int num_instances;
+    int first_instance;
 } push_constants_batched;
 
 Camera camera;
@@ -29,7 +31,7 @@ void camera_update(GLFWwindow*, CameraInput* input);
 
 bool reload_shaders = false;
 
-#define INSTANCES_COUNT 1024
+#define INSTANCES_COUNT 1024*1024
 
 struct Shaders {
     std::vector<std::string> files = { "meshshader.mesh.spv", "meshshader.task.spv", "meshshader.frag.spv" };
@@ -140,9 +142,9 @@ int main(int argc, char** argv) {
     std::vector<vec3> positions;
     for (size_t i = 0; i < INSTANCES_COUNT; i++) {
         vec3 p;
-        p.x = ((float)rand() / RAND_MAX) * 20 - 10;
-        p.y = ((float)rand() / RAND_MAX) * 20 - 10;
-        p.z = ((float)rand() / RAND_MAX) * 20 - 10;
+        p.x = ((float)rand() / RAND_MAX) * 2000 - 1000;
+        p.y = ((float)rand() / RAND_MAX) * 2000 - 1000;
+        p.z = ((float)rand() / RAND_MAX) * 2000 - 1000;
         positions.push_back(p);
     }
 
@@ -236,17 +238,21 @@ int main(int argc, char** argv) {
             auto& pipeline = shaders->pipeline;
             vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline());
 
+            push_constants_batched.matrix = m;
             context.frame().withRenderTargets(cmdbuf, { &image }, &*depthBuffer, [&]() {
-                for (auto pos : positions) {
-                    mat4 cube_matrix = m;
-                    cube_matrix = cube_matrix * translate_mat4(pos);
+                //for (auto pos : positions) {
+                    //mat4 cube_matrix = m;
+                    //cube_matrix = cube_matrix * translate_mat4(pos);
 
-                    push_constants_batched.matrix = m;
-                    vkCmdPushConstants(cmdbuf, pipeline->layout(), VK_SHADER_STAGE_MESH_BIT_EXT, 0, sizeof(push_constants_batched), &push_constants_batched);
-
-                    vk.cmdDrawMeshTasksEXT(cmdbuf, 1, 1, 1);
+                    int BATCH_SIZE = 32768;
+                    for (int i = 0; i < INSTANCES_COUNT; i+= BATCH_SIZE) {
+                        push_constants_batched.num_instances = BATCH_SIZE;
+                        push_constants_batched.first_instance = i;
+                        vkCmdPushConstants(cmdbuf, pipeline->layout(), VK_SHADER_STAGE_MESH_BIT_EXT | VK_SHADER_STAGE_TASK_BIT_EXT, 0, sizeof(push_constants_batched), &push_constants_batched);
+                        vk.cmdDrawMeshTasksEXT(cmdbuf, 1, 1, 1);
+                    }
                     //vkCmdDraw(cmdbuf, 12 * 3, 1, 0, 0);
-                }
+                //}
             });
 
             auto now = imr_get_time_nano();

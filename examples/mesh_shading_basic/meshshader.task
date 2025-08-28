@@ -6,10 +6,32 @@
 
 #version 450
 #extension GL_EXT_mesh_shader : require
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_EXT_buffer_reference : require
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
+layout(scalar, buffer_reference) buffer VertexBuffer {
+	vec4 vertices[];
+};
+
+layout(scalar, buffer_reference) buffer FaceBuffer {
+	uvec4 faces[];
+};
+
+layout(scalar, buffer_reference) buffer PositionBuffer {
+	vec3 positions[];
+};
+
+layout(scalar, push_constant) uniform T {
+	VertexBuffer vertex_buffer;
+    mat4 matrix;
+	FaceBuffer face_buffer;
+	PositionBuffer position_buffer;
+	int num_instances;
+} push_constants;
+
 void main()
 {
-    EmitMeshTasksEXT(1, 1, 1);
+    EmitMeshTasksEXT(push_constants.num_instances, 1, 1);
 }

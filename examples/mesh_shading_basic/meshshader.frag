@@ -5,12 +5,13 @@
  */
 
 #version 450
+#extension GL_EXT_mesh_shader : require
  
 // layout (location = 0) in VertexInput {
 //   vec4 color;
 // } vertexInput;
 
-layout(location = 1) in PrimitiveInput {
+layout(location = 1) perprimitiveEXT in PrimitiveInput {
   flat vec4 color;
 } primitiveInput;
 
