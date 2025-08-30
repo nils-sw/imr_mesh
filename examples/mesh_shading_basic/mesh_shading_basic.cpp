@@ -16,8 +16,8 @@ struct {
     mat4 matrix;
     VkDeviceAddress face_buffer;
     VkDeviceAddress position_buffer;
-    int num_instances;
-    int first_instance;
+    // int num_instances;
+    // int first_instance;
 } push_constants_batched;
 
 Camera camera;
@@ -244,13 +244,13 @@ int main(int argc, char** argv) {
                     //mat4 cube_matrix = m;
                     //cube_matrix = cube_matrix * translate_mat4(pos);
 
-                    int BATCH_SIZE = 32768;
-                    for (int i = 0; i < INSTANCES_COUNT; i+= BATCH_SIZE) {
-                        push_constants_batched.num_instances = BATCH_SIZE;
-                        push_constants_batched.first_instance = i;
+                    // int BATCH_SIZE = 32768;
+                    // for (int i = 0; i < INSTANCES_COUNT; i+= BATCH_SIZE) {
+                        // push_constants_batched.num_instances = BATCH_SIZE;
+                        // push_constants_batched.first_instance = i;
                         vkCmdPushConstants(cmdbuf, pipeline->layout(), VK_SHADER_STAGE_MESH_BIT_EXT | VK_SHADER_STAGE_TASK_BIT_EXT, 0, sizeof(push_constants_batched), &push_constants_batched);
-                        vk.cmdDrawMeshTasksEXT(cmdbuf, 1, 1, 1);
-                    }
+                        vk.cmdDrawMeshTasksEXT(cmdbuf, 1024, 1, 1);
+                    // }
                     //vkCmdDraw(cmdbuf, 12 * 3, 1, 0, 0);
                 //}
             });

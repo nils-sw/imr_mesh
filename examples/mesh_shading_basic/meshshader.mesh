@@ -26,8 +26,8 @@ layout(scalar, push_constant) uniform T {
     mat4 matrix;
 	FaceBuffer face_buffer;
 	PositionBuffer position_buffer;
-	int num_instances;
-	int first_instance;
+	// int num_instances;
+	// int first_instance;
 } push_constants;
 
 layout(local_size_x = 12, local_size_y = 1, local_size_z = 1) in;
@@ -47,12 +47,21 @@ const vec4[6] colors = {
 	vec4(1.0, 1.0, 0.0, 1.0) 	// bottom
 	};
 
-layout(location = 1) perprimitiveEXT out fdsfef {
+layout(location = 1) perprimitiveEXT out PrimitiveOutput {
 	vec4 color;
 } primitiveOutput[];
 
+struct Task {
+	uint offset;
+	uint numWorkgroups;
+};
+
+taskPayloadSharedEXT Task payload;
+
 void main() {
 	SetMeshOutputsEXT(4 * 6, 2 * 6);
+
+	uint sharedData = payload.offset * gl_NumWorkGroups.x;
 
     bool is_even = gl_LocalInvocationID.x % 2 == 0;
 	uint triId = gl_LocalInvocationID.x;
@@ -60,7 +69,7 @@ void main() {
 
 	uint instance_id = gl_WorkGroupID.x;
 
-    vec3 offset = push_constants.position_buffer.positions[push_constants.first_instance + instance_id];
+    vec3 offset = push_constants.position_buffer.positions[sharedData + instance_id];
 	uvec4 index = push_constants.face_buffer.faces[faceId];
 
 	mat4 mvp = push_constants.matrix;

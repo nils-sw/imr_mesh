@@ -11,6 +11,15 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
+// struct Shared_Data {
+//     uint instance_id;
+// };
+
+struct Task {
+	uint offset;
+	uint numWorkgroups;
+};
+
 layout(scalar, buffer_reference) buffer VertexBuffer {
 	vec4 vertices[];
 };
@@ -28,10 +37,13 @@ layout(scalar, push_constant) uniform T {
     mat4 matrix;
 	FaceBuffer face_buffer;
 	PositionBuffer position_buffer;
-	int num_instances;
+	// int num_instances;
 } push_constants;
+
+taskPayloadSharedEXT Task payload;
 
 void main()
 {
-    EmitMeshTasksEXT(push_constants.num_instances, 1, 1);
+    payload.offset = gl_WorkGroupID.x;
+    EmitMeshTasksEXT(1024, 1, 1);
 }
